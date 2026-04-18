@@ -1613,6 +1613,21 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_last = p_c_last
                 ORDER BY c_first
                 LIMIT 1 OFFSET target_offset;
+
+                IF p_c_id IS NULL
+                THEN
+                SELECT c_first, c_middle, c_last,
+                c_street_1, c_street_2, c_city, c_state, c_zip,
+                c_phone, c_credit, c_credit_lim,
+                c_discount, c_balance, c_since
+                INTO p_c_first, p_c_middle, p_c_last,
+                p_c_street_1, p_c_street_2, p_c_city, p_c_state, p_c_zip,
+                p_c_phone, p_c_credit, p_c_credit_lim,
+                p_c_discount, p_c_balance, p_c_since
+                FROM customer
+                WHERE c_w_id = p_c_w_id AND c_d_id = p_c_d_id AND c_id = p_c_id_in;
+                p_c_id := p_c_id_in;
+                END IF;
                 ELSE
                 SELECT c_first, c_middle, c_last,
                 c_street_1, c_street_2, c_city, c_state, c_zip,
@@ -1823,6 +1838,15 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 WHERE c_last = os_c_last AND c_d_id = os_d_id AND c_w_id = os_w_id
                 ORDER BY c_first
                 LIMIT 1 OFFSET target_offset;
+
+                IF os_c_id IS NULL
+                THEN
+                SELECT c_balance, c_first, c_middle, c_last
+                INTO os_c_balance, os_c_first, os_c_middle, os_c_last
+                FROM customer
+                WHERE c_id = $3 AND c_d_id = os_d_id AND c_w_id = os_w_id;
+                os_c_id := $3;
+                END IF;
                 ELSE
                 SELECT c_balance, c_first, c_middle, c_last
                 INTO os_c_balance, os_c_first, os_c_middle, os_c_last
