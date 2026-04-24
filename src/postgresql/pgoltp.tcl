@@ -3173,11 +3173,27 @@ switch $myposition {
                     error $message
                 }
             }
-            pg_select $lda1 "select sum(d_next_o_id) from district" o_id_arr {
-                set end_nopm $o_id_arr(sum)
+            if { $pg_storedprocs eq "false" && [ tsv::exists application clientcount_metrics ] } {
+                set client_metrics [ tsv::get application clientcount_metrics ]
+                set client_metrics_complete [ expr {[ tsv::exists application clientcount_metrics_complete ] ? [ tsv::get application clientcount_metrics_complete ] : 0} ]
+                if { !$client_metrics_complete } {
+                    puts "WARNING client-side TPM/NOPM metrics are incomplete; some VUs did not report before result collection."
+                }
+                set nopm [ dict get $client_metrics neworder ]
+                set tpm 0
+                foreach txn {neworder payment delivery stocklevel orderstatus} {
+                    if {[dict exists $client_metrics $txn]} {
+                        incr tpm [ dict get $client_metrics $txn ]
+                    }
+                }
+                puts "CLIENT SIDE RESULT : $client_metrics"
+            } else {
+                pg_select $lda1 "select sum(d_next_o_id) from district" o_id_arr {
+                    set end_nopm $o_id_arr(sum)
+                }
+                set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
+                set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
             }
-            set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
-            set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
             puts "[ expr $totalvirtualusers - 1 ] Active Virtual Users configured"
             puts [ testresult $nopm $tpm PostgreSQL ]
             tsv::set application abort 1
@@ -3684,11 +3700,27 @@ switch $myposition {
                     error $message
                 }
             }
-            pg_select $lda1 "select sum(d_next_o_id) from district" o_id_arr {
-                set end_nopm $o_id_arr(sum)
+            if { $pg_storedprocs eq "false" && [ tsv::exists application clientcount_metrics ] } {
+                set client_metrics [ tsv::get application clientcount_metrics ]
+                set client_metrics_complete [ expr {[ tsv::exists application clientcount_metrics_complete ] ? [ tsv::get application clientcount_metrics_complete ] : 0} ]
+                if { !$client_metrics_complete } {
+                    puts "WARNING client-side TPM/NOPM metrics are incomplete; some VUs did not report before result collection."
+                }
+                set nopm [ dict get $client_metrics neworder ]
+                set tpm 0
+                foreach txn {neworder payment delivery stocklevel orderstatus} {
+                    if {[dict exists $client_metrics $txn]} {
+                        incr tpm [ dict get $client_metrics $txn ]
+                    }
+                }
+                puts "CLIENT SIDE RESULT : $client_metrics"
+            } else {
+                pg_select $lda1 "select sum(d_next_o_id) from district" o_id_arr {
+                    set end_nopm $o_id_arr(sum)
+                }
+                set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
+                set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
             }
-            set tpm [ expr {($end_trans - $start_trans)/$durmin} ]
-            set nopm [ expr {($end_nopm - $start_nopm)/$durmin} ]
             puts "[ expr $totalvirtualusers - 1 ] VU \* $async_client AC \= [ expr ($totalvirtualusers - 1) * $async_client ] Active Sessions configured"
             puts [ testresult $nopm $tpm PostgreSQL ]
             tsv::set application abort 1

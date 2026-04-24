@@ -244,6 +244,8 @@ proc printclientcountasync {clientname nocnt pycnt dlcnt slcnt oscnt} {
 
 proc initializeclientcountsync {totalvirtualusers} {
   upvar vu vu
+  catch {tsv::unset application clientcount_metrics}
+  catch {tsv::unset application clientcount_metrics_complete}
   for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
     tsv::keylset clientcount $ccnt neworder 0 payment 0 delivery 0 stocklevel 0 orderstatus 0 status false
     set vu($ccnt) false
@@ -255,6 +257,8 @@ proc initializeclientcountsync {totalvirtualusers} {
 
 proc initializeclientcountasync {totalvirtualusers async_client} {
   upvar vu vu
+  catch {tsv::unset application clientcount_metrics}
+  catch {tsv::unset application clientcount_metrics_complete}
   for {set ccnt 2} {$ccnt <= $totalvirtualusers} {incr ccnt} {
     for {set vucnt 1} {$vucnt <= $async_client} {incr vucnt} {
       set clientdesc "vuser$ccnt:ac$vucnt"
@@ -293,13 +297,19 @@ proc getclienttpmsync {rampup duration totalvirtualusers} {
     }
     if $alldone {
       #all VUs reported, divide all TPM by time duration
-      puts "CLIENT SIDE TPM : [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+      set metrics [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]
+      tsv::set application clientcount_metrics $metrics
+      tsv::set application clientcount_metrics_complete 1
+      puts "CLIENT SIDE TPM : $metrics"
       break
     } else { after 1000 }
   }
   if !$alldone {
     #not all VUs reported
-    puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+    set metrics [ dict map {ccnt spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]
+    tsv::set application clientcount_metrics $metrics
+    tsv::set application clientcount_metrics_complete 0
+    puts "WARNING CLIENT TPM INCOMPLETE : $metrics"
   }
 }
 
@@ -332,13 +342,19 @@ proc getclienttpmasync {rampup duration totalvirtualusers async_client} {
     }
     if $alldone {
       #all VUs reported, divide all TPM by time duration
-      puts "CLIENT SIDE TPM : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+      set metrics [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]
+      tsv::set application clientcount_metrics $metrics
+      tsv::set application clientcount_metrics_complete 1
+      puts "CLIENT SIDE TPM : $metrics"
       break
     } else { after 1000 }
   }
   if !$alldone {
     #not all VUs reported
-    puts "WARNING CLIENT TPM INCOMPLETE : [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]"
+    set metrics [ dict map {clientdesc spcnt} $totalcnt { set spcnt [ expr $spcnt / $totalmin ] } ]
+    tsv::set application clientcount_metrics $metrics
+    tsv::set application clientcount_metrics_complete 0
+    puts "WARNING CLIENT TPM INCOMPLETE : $metrics"
   }
 }
 #Check genericdict on loading to define test result format
